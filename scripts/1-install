@@ -501,7 +501,7 @@ install_to()
 	! test -f hd/$asrc/system.img -o -d hd/$asrc/system
 	set_answer_if_auto $?
 	adialog --title " Question " --defaultno --yesno \
-		"\nDo you want to install /system directory as read-write?\n\nMaking /system be read-write is easier for debugging, but it needs more disk space and longer installation time." 10 61
+		"\nDo you want to install /system directory as read-write (uncompressed) ?\n\nMaking /system be read-write is easier for debugging and provides better usability, but it may take a bit longer to install." 10 61
 	if [ $? -eq 0 -a -e /sfs/system.img ]; then
 		sysimg="/sfs/system.img"
 	else
@@ -515,6 +515,8 @@ install_to()
 	try_upgrade hd/$asrc
 	mkdir -p hd/$asrc
 	cd hd/$asrc
+	# GearLock Detection flag
+	touch findme
 	rm -rf system*
 	( ( cd /; find $files | $CPIO -H newc -o ) | pv -ns ${size}k | ( $CPIO -iud > /dev/null; echo $? > /tmp/result )) 2>&1 \
 		| progress_bar "Installing $OS_TITLE to $1" "Expect to write $size KB..."
