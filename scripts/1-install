@@ -12,6 +12,7 @@ menufile=/tmp/menu-$$
 
 CPIO=cpio
 OS_TITLE=${OS_TITLE:-PhoenixOS-Darkmatter}
+VER=${VER:-4.7}
 
 rebooting()
 {
