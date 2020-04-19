@@ -1,5 +1,6 @@
 #
 # By Chih-Wei Huang <cwhuang@linux.org.tw>
+# Modified by SupremeGamers (supreme-gamers.com)
 #
 # License: GNU Public License
 # We explicitely grant the right to use the scripts
@@ -10,7 +11,8 @@ tempfile=/tmp/temp-$$
 menufile=/tmp/menu-$$
 
 CPIO=cpio
-OS_TITLE=${OS_TITLE:-Android-x86}
+OS_TITLE=${OS_TITLE:-PhoenixOS-Darkmatter}
+VER=${VER:-4.7}
 
 rebooting()
 {
@@ -255,9 +257,8 @@ create_menulst()
 	echo -e "${GRUB_OPTIONS:-default=0\ntimeout=6\nsplashimage=/grub/android-x86.xpm.gz\n}root (hd0,$1)\n" > $menulst
 
 	create_entry "$OS_TITLE $VER" quiet $cmdline
-	create_entry "$OS_TITLE $VER (Debug mode)" $cmdline DEBUG=2
-	create_entry "$OS_TITLE $VER (Debug nomodeset)" nomodeset $cmdline DEBUG=2
-	create_entry "$OS_TITLE $VER (Debug video=LVDS-1:d)" video=LVDS-1:d $cmdline DEBUG=2
+	create_entry "$OS_TITLE $VER (nomodeset)" nomodeset $cmdline 
+	create_entry "$OS_TITLE $VER (HDMI output video=LVDS-1:d)" video=LVDS-1:d $cmdline
 }
 
 create_winitem()
