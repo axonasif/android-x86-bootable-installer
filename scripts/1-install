@@ -12,6 +12,7 @@ menufile=/tmp/menu-$$
 CPIO=cpio
 OS_TITLE=${OS_TITLE:-DarkMatter}
 INSTALL_PREFIX="$OS_TITLE"
+VER="Exo4.7"
 
 rebooting()
 {
