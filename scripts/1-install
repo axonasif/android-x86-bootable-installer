@@ -1,6 +1,5 @@
 #
 # By Chih-Wei Huang <cwhuang@linux.org.tw>
-# Modified by SupremeGamers (supreme-gamers.com)
 #
 # License: GNU Public License
 # We explicitely grant the right to use the scripts
@@ -11,8 +10,7 @@ tempfile=/tmp/temp-$$
 menufile=/tmp/menu-$$
 
 CPIO=cpio
-OS_TITLE=${OS_TITLE:-PhoenixOS-Darkmatter}
-VER=${VER:-4.7}
+OS_TITLE=${OS_TITLE:-Android-x86}
 
 rebooting()
 {
@@ -257,8 +255,9 @@ create_menulst()
 	echo -e "${GRUB_OPTIONS:-default=0\ntimeout=6\nsplashimage=/grub/android-x86.xpm.gz\n}root (hd0,$1)\n" > $menulst
 
 	create_entry "$OS_TITLE $VER" quiet $cmdline
-	create_entry "$OS_TITLE $VER (nomodeset)" nomodeset $cmdline 
-	create_entry "$OS_TITLE $VER (HDMI output video=LVDS-1:d)" video=LVDS-1:d $cmdline
+	create_entry "$OS_TITLE $VER (Debug mode)" $cmdline DEBUG=2
+	create_entry "$OS_TITLE $VER (Debug nomodeset)" nomodeset $cmdline DEBUG=2
+	create_entry "$OS_TITLE $VER (Debug video=LVDS-1:d)" video=LVDS-1:d $cmdline DEBUG=2
 }
 
 create_winitem()
@@ -335,7 +334,7 @@ try_upgrade()
 	[ -d $1 ] && return
 
 	for d in hd/*; do
-		[ -e "$d"/ramdisk.img -a -n "`ls "$d"/system* 2> /dev/null`" ] && echo \"`basename $d`\" \"\"
+		[ -n "`ls "$d"/system* 2> /dev/null`" ] && echo \"`basename $d`\" \"\"
 	done | sort -r > $menufile
 
 	count=`wc -l < $menufile`
@@ -354,6 +353,9 @@ try_upgrade()
 		prev=hd/$choice
 		if [ -d "$prev" ]; then
 			mv $prev $1
+			for d in `find hd -type l -maxdepth 1`; do
+				[ "`readlink $d`" = "$choice" ] && ln -sf `basename $1` $d
+			done
 			rm -rf $1/data/dalvik-cache/* $1/data/system/wpa_supplicant
 			[ -s $1/data/misc/wifi/wpa_supplicant.conf ] && sed -i 's/\(ctrl_interface=\)\(.*\)/\1wlan0/' $1/data/misc/wifi/wpa_supplicant.conf
 		fi
@@ -499,26 +501,26 @@ install_to()
 		fi
 	fi
 
+	try_upgrade hd/$asrc
+
 	! test -f hd/$asrc/system.img -o -d hd/$asrc/system
 	set_answer_if_auto $?
 	adialog --title " Question " --defaultno --yesno \
-		"\nDo you want to install /system directory as read-write (uncompressed) ?\n\nMaking /system be read-write is easier for debugging and provides better usability, but it may take a bit longer to install." 10 61
+		"\nDo you want to install /system directory as read-write?\n\nMaking /system be read-write is easier for debugging, but it needs more disk space and longer installation time." 10 61
 	if [ $? -eq 0 -a -e /sfs/system.img ]; then
 		sysimg="/sfs/system.img"
 	else
 		sysimg="mnt/$SRC/system.*"
 	fi
-	files="mnt/$SRC/kernel mnt/$SRC/initrd.img mnt/$SRC/$RAMDISK $sysimg"
+	files="mnt/$SRC/kernel mnt/$SRC/initrd.img $sysimg"
 	size=0
 	for s in `du -sk $files | awk '{print $1}'`; do
 		size=$(($size+$s))
 	done
-	try_upgrade hd/$asrc
+
 	mkdir -p hd/$asrc
 	cd hd/$asrc
-	# GearLock Detection flag
-	touch findme
-	rm -rf system*
+	rm -rf system* *.img
 	( ( cd /; find $files | $CPIO -H newc -o ) | pv -ns ${size}k | ( $CPIO -iud > /dev/null; echo $? > /tmp/result )) 2>&1 \
 		| progress_bar "Installing $OS_TITLE to $1" "Expect to write $size KB..."
 	result=$((`cat /tmp/result`*255))
