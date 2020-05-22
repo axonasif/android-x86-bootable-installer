@@ -513,7 +513,7 @@ install_to()
 	else
 		sysimg="mnt/$SRC/system.*"
 	fi
-	files="mnt/$SRC/kernel mnt/$SRC/initrd.img $sysimg"
+	files="mnt/$SRC/kernel mnt/$SRC/gearlock mnt/$SRC/initrd.img $sysimg"
 	size=0
 	for s in `du -sk $files | awk '{print $1}'`; do
 		size=$(($size+$s))
