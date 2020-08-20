@@ -258,6 +258,12 @@ create_menulst()
 
 	create_entry "$OS_TITLE $VER" quiet $cmdline
 	create_entry "$OS_TITLE $VER (Debug mode)" $cmdline DEBUG=2
+	create_entry "$OS_TITLE $VER (Debug mode) gralloc.gbm" $cmdline DEBUG=2 GRALLOC=gbm
+	create_entry "$OS_TITLE $VER (Debug mode) drmfb-composer gralloc.gbm" $cmdline DEBUG=2 HWC=drmfb GRALLOC=gbm
+	create_entry "$OS_TITLE $VER (Debug mode) hwcomposer.drm gralloc.gbm" $cmdline DEBUG=2 HWC=drm GRALLOC=gbm
+	create_entry "$OS_TITLE $VER (Debug mode) gralloc.minigbm" DEBUG=2 GRALLOC=minigbm
+	create_entry "$OS_TITLE $VER (Debug mode) hwcomposer.drm_minigbm gralloc.minigbm" DEBUG=2 HWC=drm_minigbm GRALLOC=minigbm
+	create_entry "$OS_TITLE $VER (Debug mode) hwcomposer.intel gralloc.intel" DEBUG=2 HWC=intel GRALLOC=intel
 	create_entry "$OS_TITLE $VER (Debug nomodeset)" nomodeset $cmdline DEBUG=2
 	create_entry "$OS_TITLE $VER (Debug video=LVDS-1:d)" video=LVDS-1:d $cmdline DEBUG=2
 }
@@ -336,7 +342,7 @@ try_upgrade()
 	[ -d $1 ] && return
 
 	for d in hd/*; do
-		[ -n "`ls "$d"/system* 2> /dev/null`" ] && echo \"`basename $d`\" \"\"
+		[ -e "$d"/ramdisk.img -a -n "`ls "$d"/system* 2> /dev/null`" ] && echo \"`basename $d`\" \"\"
 	done | sort -r > $menufile
 
 	count=`wc -l < $menufile`
@@ -507,21 +513,23 @@ install_to()
 
 	! test -f hd/$asrc/system.img -o -d hd/$asrc/system
 	set_answer_if_auto $?
-	adialog --title " Question " --yesno "\nDo you want to install /system directory as read-write?\n\nMaking /system be read-write ensures more performance and stability." 10 61
+	adialog --title " Question " --defaultno --yesno \
+		"\nDo you want to install /system directory as read-write?\n\nMaking /system be read-write ensures more performance and stability." 10 61
 	if [ $? -eq 0 -a -e /sfs/system.img ]; then
 		sysimg="/sfs/system.img"
 	else
 		sysimg="mnt/$SRC/system.*"
 	fi
-	files="mnt/$SRC/kernel mnt/$SRC/gearlock mnt/$SRC/initrd.img $sysimg"
+	files="mnt/$SRC/kernel mnt/$SRC/initrd.img mnt/$SRC/$RAMDISK $sysimg"
 	size=0
 	for s in `du -sk $files | awk '{print $1}'`; do
 		size=$(($size+$s))
 	done
 
 	mkdir -p hd/$asrc
+	test -e "/mnt/$SRC/gearlock" && cp "/mnt/$SRC/gearlock" . # Copy gearlock boot image
 	cd hd/$asrc
-	rm -rf system* *.img
+	rm -rf system*
 	( ( cd /; find $files | $CPIO -H newc -o ) | pv -ns ${size}k | ( $CPIO -iud > /dev/null; echo $? > /tmp/result )) 2>&1 \
 		| progress_bar "Installing $OS_TITLE to $1" "Expect to write $size KB..."
 	result=$((`cat /tmp/result`*255))
